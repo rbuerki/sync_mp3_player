@@ -1,0 +1,8 @@
+SOURCE_PATH: "C:/Users/r2d4/OneDrive/mp3"
+
+TARGET_PATH: "E:"
+
+SYNC_DIRECTORIES:
+  - "Crossover Artists"
+  - "Death Metal Artists"
+  - "Hardcore Artists"

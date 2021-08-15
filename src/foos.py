@@ -1,4 +1,5 @@
 import logging
+import shutil
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union
@@ -6,14 +7,15 @@ from typing import Dict, List, Optional, Tuple, Union
 logger = logging.getLogger(__name__)
 
 FileDict = Dict[Path, datetime]
+FileList = List[Optional[Path]]
 
 
-def find_last_modified_file(sync_dir_path):
-    """TODO: just for testing. Rewrite to return_last_modification_date()"""
-    time, file_path = max(
-        (f.stat().st_mtime, f) for f in sync_dir_path.rglob("*")
-    )
-    print(datetime.fromtimestamp(time), file_path)
+# def find_last_modified_file(sync_dir_path):
+#     """TODO: just for testing. Rewrite to return_last_modification_date()."""
+#     time, file_path = max(
+#         (f.stat().st_mtime, f) for f in sync_dir_path.rglob("*")
+#     )
+#     print(datetime.fromtimestamp(time), file_path)
 
 
 def create_file_dicts(
@@ -37,15 +39,15 @@ def create_file_dicts(
 
 
 def compare_dicts(
-    source_dict: FileDict, target_dict: FileDict,
-) -> Tuple[List[Optional[Path]], List[Optional[Path]], List[Optional[Path]]]:
+    source_dict: FileDict, target_dict: FileDict, sync_dir: str,
+) -> Tuple[FileList, FileList, FileList]:
     """Compare file dicts for and return a list each for all newly
     added, updated or deleted filepaths.
     """
     if source_dict == target_dict:
         logger.info(
-            f"No changes detected between target and source. "
-            f"Terminating sync process for directory {sync_dir}."
+            f"No changes detected between target and source "
+            f"for directory '{sync_dir}''."
         )
         added = removed = updated = []
         return added, removed, updated
@@ -74,22 +76,25 @@ def compare_dicts(
         return added, removed, updated
 
 
-# def list_newly_modified_objects(sync_dir_path: Path, last_modification_date: datetime) -> List[Path]:
-#     """TODO"""
-#     pass
+def copy_objects_to_target(
+    file_list: FileList, source: Path, target: Path, sync_dir: str
+) -> int:
+    """Copy objects in list from source to path. Existing objects will be overwritten."""
+    counter = 0
+    for f in file_list:
+        logging.info(f"Copying {f} to target ...")
+        shutil.copy((source / sync_dir / f), (target / sync_dir / f))
+        counter += 1
+    return counter
 
 
-# def copy_objects_to_target(sync_dir_path: Path, ...) -> int:
-#     """TODO"""
-#     counter = 0
-#     return counter
-
-
-# def find_removed_objects(sync_dir_path: Path, ...) -> List[Path]:
-#     """TODO"""
-#     pass
-
-
-# def delete_removed_objects_on_target():
-#     """TODO"""
-#     pass
+def remove_objects_from_target(
+    file_list: FileList, target: Path, sync_dir: str
+) -> int:
+    """Delete objects in list from target."""
+    counter = 0
+    for f in file_list:
+        logging.info(f"Deleting {f} from target ...")
+        (target / sync_dir / f).unlink()
+        counter += 1
+    return counter

@@ -42,9 +42,17 @@ def main(logger: logging.Logger):
         source_dict, target_dict = foos.create_file_dicts(
             source, source, sync_dir
         )
-        added, removed, updated = foos.compare_dicts(source_dict, target_dict)
+        added, removed, updated = foos.compare_dicts(
+            source_dict, target_dict, sync_dir
+        )
 
-        print(added, removed, updated)
+        n_added = foos.copy_objects_to_target(added, source, target, sync_dir)
+        n_removed = foos.remove_objects_from_target(removed, target, sync_dir)
+        n_updated = foos.copy_objects_to_target(
+            updated, source, target, sync_dir
+        )
+
+        print(n_added)
 
         # sync_dir_path = source / dir
         # if sync_dir_path.exists():

@@ -10,14 +10,6 @@ FileDict = Dict[Path, datetime]
 FileList = List[Optional[Path]]
 
 
-# def find_last_modified_file(sync_dir_path):
-#     """TODO: just for testing. Rewrite to return_last_modification_date()."""
-#     time, file_path = max(
-#         (f.stat().st_mtime, f) for f in sync_dir_path.rglob("*")
-#     )
-#     print(datetime.fromtimestamp(time), file_path)
-
-
 def create_file_dicts(
     source: Path, target: Path, sync_dir: str
 ) -> Tuple[FileDict, FileDict]:
@@ -32,7 +24,6 @@ def create_file_dicts(
             for f in (device / sync_dir).rglob("*")
             if f.is_file()
         }
-        # logging.debug(f"{device}, {sync_dir}, {len(file_dict.items())}")  # TODO remove
         file_dicts.append(file_dict)
 
     return file_dicts[0], file_dicts[1]
@@ -46,8 +37,8 @@ def compare_dicts(
     """
     if source_dict == target_dict:
         logger.info(
-            f"No changes detected between target and source "
-            f"for directory '{sync_dir}''."
+            f"[yellow]No changes detected between target and source "
+            f"for directory '{sync_dir}'.[/]"
         )
         added = removed = updated = []
         return added, removed, updated
@@ -57,29 +48,25 @@ def compare_dicts(
         old_keys = set(target_dict.keys())
         intersect_keys = new_keys.intersection(old_keys)
         added = list(new_keys - old_keys)
-        removed = list(old_keys - new_keys)
         updated = [f for f in intersect_keys if source_dict[f] > target_dict[f]]
-
-        # # Pretify the output if len of object is 0
-        # for iterable in [added, removed, updated]:
-        #     if len(iterable) == 0:
-        #         iterable = "-"
-        #     else:
-        #         iterable = ", ".join([f.name for f in iterable])
+        removed = list(old_keys - new_keys)
 
         logger.warning(
-            "[dark_red]CHANGES DETECTED in tables and / or views since last run[/]:\n"
+            f"[yellow]Changes dected between target and source"
+            f"for directory '{sync_dir}':[/]\n"
             f"- Added files: {added if len(added) > 0 else '-'}\n"
             f"- Removed files: {removed if len(removed) > 0 else '-'}\n"
             f"- Updated files: {updated if len(updated) > 0 else '-'}."
         )
-        return added, removed, updated
+        return added, updated, removed
 
 
 def copy_objects_to_target(
     file_list: FileList, source: Path, target: Path, sync_dir: str
 ) -> int:
-    """Copy objects in list from source to path. Existing objects will be overwritten."""
+    """Copy objects in list from source to path. Existing objects
+    will be overwritten.
+    """
     counter = 0
     for f in file_list:
         logging.info(f"Copying {f} to target ...")
@@ -91,10 +78,24 @@ def copy_objects_to_target(
 def remove_objects_from_target(
     file_list: FileList, target: Path, sync_dir: str
 ) -> int:
-    """Delete objects in list from target."""
+    """Delete objects in list from target. First the files,
+    then all empty directories.
+    """
+    directories_to_delete_if_empty = []
     counter = 0
+
     for f in file_list:
-        logging.info(f"Deleting {f} from target ...")
+        logging.info(f"Deleting file {f} from target ...")
         (target / sync_dir / f).unlink()
+        directories_to_delete_if_empty.append(f.parent)
         counter += 1
+
+    # Remove all empty directories
+    for d in set(directories_to_delete_if_empty):
+        try:
+            logging.info(f"Removing empty directory {d} from target ...")
+            d.rmdir()
+        except OSError:
+            pass
+
     return counter

@@ -29,7 +29,6 @@ def initialize_logger():
     return logger
 
 
-# TEST
 def main(logger: logging.Logger):
 
     source: Path = Path(utils.read_yaml(CONFIG_PATH, "SOURCE_PATH"))
@@ -42,7 +41,7 @@ def main(logger: logging.Logger):
         source_dict, target_dict = foos.create_file_dicts(
             source, source, sync_dir
         )
-        added, removed, updated = foos.compare_dicts(
+        added, updated, removed = foos.compare_dicts(
             source_dict, target_dict, sync_dir
         )
 

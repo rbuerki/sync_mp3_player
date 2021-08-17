@@ -1,9 +1,7 @@
-import logging
 from pathlib import Path
 from typing import List
 
 from rich.console import Console
-from rich.logging import RichHandler
 
 import utils
 import foos
@@ -13,38 +11,26 @@ console = Console()
 CONFIG_PATH = Path.cwd() / "config.yaml"
 
 
-def initialize_logger():
-    """Initialize logging to console using rich."""
-    logger = logging.getLogger()
-    logger.setLevel(logging.DEBUG)
-    # Create a formatter
-    cformatter = logging.Formatter(fmt="%(message)s", datefmt="[%X]")
-    # Create console handler
-    sh = RichHandler(show_time=False, show_path=False, markup=True)
-    sh.setLevel(logging.DEBUG)
-    sh.setFormatter(cformatter)
-    logger.addHandler(sh)
-
-    return logger
-
-
-def main(logger: logging.Logger):
+def main(console: Console):
 
     source: Path = Path(utils.read_yaml(CONFIG_PATH, "SOURCE_PATH"))
     target: Path = Path(utils.read_yaml(CONFIG_PATH, "TARGET_PATH"))
     sync_dirs: List[str] = utils.read_yaml(CONFIG_PATH, "SYNC_DIRECTORIES")
 
-    logger.info("\n[bold yellow]Starting sync process ...[/]",)
+    if not target.is_dir():
+        raise OSError("Target device not found at path '{target}'.")
+
+    console.log("[bold yellow]Starting sync process ...[/]",)
 
     source_dict, target_dict = foos.walk_sync_dirs_and_merge_file_dicts(
         source, target, sync_dirs
     )
     added, updated, removed = foos.compare_dicts(source_dict, target_dict)
 
-    logger.info(
-        f"\n[yellow] - Found {len(added)} new files."
+    console.print(
+        f"\n[magenta] - Found {len(added)} new files."
         f"\n - Found {len(updated)} updated files."
-        f"\n - Found {len(removed)} removed files."
+        f"\n - Found {len(removed)} removed files.\n"
     )
 
     if len(added) > 0:
@@ -54,11 +40,8 @@ def main(logger: logging.Logger):
     if len(removed) > 0:
         foos.remove_objects_from_target(removed, target)
 
-    # sync_dir_path = source / dir
-    # if sync_dir_path.exists():
-    #     foos.find_last_modified_file(sync_dir_path)
+    console.log("[bold yellow] Sync process complete!")
 
 
 if __name__ == "__main__":
-    logger = initialize_logger()
-    main(logger)
+    main(console)

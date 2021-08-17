@@ -2,9 +2,13 @@ import logging
 import shutil
 from datetime import datetime
 from pathlib import Path
+from time import sleep
 from typing import Dict, List, Tuple
 
+from rich.console import Console
+
 logger = logging.getLogger(__name__)
+console = Console()
 
 FileDict = Dict[Path, datetime]
 FileList = List[Path]
@@ -71,9 +75,11 @@ def copy_objects_to_target(file_list: FileList, source: Path, target: Path):
     """Copy objects in list from source to path. Existing objects
     will be overwritten.
     """
-    for f in file_list:
-        logging.info(f"Copying {f.name} to target ...")
-        shutil.copy((source / f), (target / f))
+    with console.status("[bold yellow] Copying new files ..."):
+        for pos, f in enumerate(file_list):
+            console.print(f"{pos} - Copying {f.name} to target ...")
+            (target / f).parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy((source / f), (target / f).parent)
 
 
 def remove_objects_from_target(file_list: FileList, target: Path):
@@ -82,15 +88,27 @@ def remove_objects_from_target(file_list: FileList, target: Path):
     """
     directories_to_delete_if_empty = []
 
-    for f in file_list:
-        logging.info(f"Deleting file {f.name} from target ...")
-        (target / f).unlink()
-        directories_to_delete_if_empty.append(f.parent)
+    with console.status("[bold yellow] Deleting removed files ..."):
+        for pos, f in enumerate(file_list):
+            console.print(f"{pos} - Deleting file {f.name} from target ...")
+            (target / f).unlink()
+            directories_to_delete_if_empty.append(f.parent)
+            sleep(0.5)
 
-    # Remove all empty directories
-    for d in set(directories_to_delete_if_empty):
-        try:
-            logging.info(f"Removing empty directory {d} from target ...")
-            d.rmdir()
-        except OSError:
-            pass
+    # Remove all empty directories (album and artist)
+    with console.status("[bold yellow] Deleting removed files ..."):
+        for d in set(directories_to_delete_if_empty):
+            try:
+                d.rmdir()
+                console.print(f"Cleaning directory {d} from target ...")
+                try:
+                    d.parent.rmdir()
+                    console.print(
+                        f"Cleaning directory {d.parent} from target ..."
+                    )
+
+                except OSError:
+                    pass
+                sleep(0.5)
+            except OSError:
+                pass

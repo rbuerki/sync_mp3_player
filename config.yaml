@@ -1,6 +1,6 @@
 SOURCE_PATH: "C:/Users/r2d4/OneDrive/mp3"
 
-TARGET_PATH: "E:"
+TARGET_PATH: "D:"
 
 SYNC_DIRECTORIES:
   - "Crossover Artists"

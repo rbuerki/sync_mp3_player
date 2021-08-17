@@ -1,7 +1,6 @@
 import logging
-from datetime import datetime
 from pathlib import Path
-from typing import List, SupportsRound
+from typing import List
 
 from rich.console import Console
 from rich.logging import RichHandler
@@ -35,27 +34,29 @@ def main(logger: logging.Logger):
     target: Path = Path(utils.read_yaml(CONFIG_PATH, "TARGET_PATH"))
     sync_dirs: List[str] = utils.read_yaml(CONFIG_PATH, "SYNC_DIRECTORIES")
 
-    logger.info("\n[bold DARK_MAGENTA]STARTING SYNC PROCESS ...[/]",)
+    logger.info("\n[bold yellow]Starting sync process ...[/]",)
 
-    for sync_dir in [sync_dirs[0]]:  # TODO testing
-        source_dict, target_dict = foos.create_file_dicts(
-            source, source, sync_dir
-        )
-        added, updated, removed = foos.compare_dicts(
-            source_dict, target_dict, sync_dir
-        )
+    source_dict, target_dict = foos.walk_sync_dirs_and_merge_file_dicts(
+        source, target, sync_dirs
+    )
+    added, updated, removed = foos.compare_dicts(source_dict, target_dict)
 
-        n_added = foos.copy_objects_to_target(added, source, target, sync_dir)
-        n_removed = foos.remove_objects_from_target(removed, target, sync_dir)
-        n_updated = foos.copy_objects_to_target(
-            updated, source, target, sync_dir
-        )
+    logger.info(
+        f"\n[yellow] - Found {len(added)} new files."
+        f"\n - Found {len(updated)} updated files."
+        f"\n - Found {len(removed)} removed files."
+    )
 
-        print(n_added)
+    if len(added) > 0:
+        foos.copy_objects_to_target(added, source, target)
+    if len(updated) > 0:
+        foos.copy_objects_to_target(updated, source, target)
+    if len(removed) > 0:
+        foos.remove_objects_from_target(removed, target)
 
-        # sync_dir_path = source / dir
-        # if sync_dir_path.exists():
-        #     foos.find_last_modified_file(sync_dir_path)
+    # sync_dir_path = source / dir
+    # if sync_dir_path.exists():
+    #     foos.find_last_modified_file(sync_dir_path)
 
 
 if __name__ == "__main__":

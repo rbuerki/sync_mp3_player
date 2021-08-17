@@ -2,12 +2,29 @@ import logging
 import shutil
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Tuple
 
 logger = logging.getLogger(__name__)
 
 FileDict = Dict[Path, datetime]
-FileList = List[Optional[Path]]
+FileList = List[Path]
+
+
+def walk_sync_dirs_and_merge_file_dicts(
+    source: Path, target: Path, sync_dirs: List[str]
+) -> Tuple[FileDict, FileDict]:
+    """Get a dictionary each for the source and target containing
+    all the files with their last modification date for the defined
+    directories.
+    """
+    source_dict = target_dict = {}
+    for sync_dir in sync_dirs:
+        source_dict, target_dict = create_file_dicts(source, target, sync_dir)
+
+        source_dict.update(source_dict)
+        target_dict.update(target_dict)
+
+    return source_dict, target_dict
 
 
 def create_file_dicts(
@@ -20,7 +37,7 @@ def create_file_dicts(
     file_dicts = []
     for device in [source, target]:
         file_dict = {
-            f.relative_to(device / sync_dir): f.stat().st_mtime
+            f.relative_to(device): f.stat().st_mtime
             for f in (device / sync_dir).rglob("*")
             if f.is_file()
         }
@@ -30,16 +47,12 @@ def create_file_dicts(
 
 
 def compare_dicts(
-    source_dict: FileDict, target_dict: FileDict, sync_dir: str,
+    source_dict: FileDict, target_dict: FileDict,
 ) -> Tuple[FileList, FileList, FileList]:
     """Compare file dicts for and return a list each for all newly
     added, updated or deleted filepaths.
     """
     if source_dict == target_dict:
-        logger.info(
-            f"[yellow]No changes detected between target and source "
-            f"for directory '{sync_dir}'.[/]"
-        )
         added = removed = updated = []
         return added, removed, updated
 
@@ -51,44 +64,28 @@ def compare_dicts(
         updated = [f for f in intersect_keys if source_dict[f] > target_dict[f]]
         removed = list(old_keys - new_keys)
 
-        logger.warning(
-            f"[yellow]Changes dected between target and source"
-            f"for directory '{sync_dir}':[/]\n"
-            f"- Added files: {added if len(added) > 0 else '-'}\n"
-            f"- Removed files: {removed if len(removed) > 0 else '-'}\n"
-            f"- Updated files: {updated if len(updated) > 0 else '-'}."
-        )
         return added, updated, removed
 
 
-def copy_objects_to_target(
-    file_list: FileList, source: Path, target: Path, sync_dir: str
-) -> int:
+def copy_objects_to_target(file_list: FileList, source: Path, target: Path):
     """Copy objects in list from source to path. Existing objects
     will be overwritten.
     """
-    counter = 0
     for f in file_list:
-        logging.info(f"Copying {f} to target ...")
-        shutil.copy((source / sync_dir / f), (target / sync_dir / f))
-        counter += 1
-    return counter
+        logging.info(f"Copying {f.name} to target ...")
+        shutil.copy((source / f), (target / f))
 
 
-def remove_objects_from_target(
-    file_list: FileList, target: Path, sync_dir: str
-) -> int:
+def remove_objects_from_target(file_list: FileList, target: Path):
     """Delete objects in list from target. First the files,
     then all empty directories.
     """
     directories_to_delete_if_empty = []
-    counter = 0
 
     for f in file_list:
-        logging.info(f"Deleting file {f} from target ...")
-        (target / sync_dir / f).unlink()
+        logging.info(f"Deleting file {f.name} from target ...")
+        (target / f).unlink()
         directories_to_delete_if_empty.append(f.parent)
-        counter += 1
 
     # Remove all empty directories
     for d in set(directories_to_delete_if_empty):
@@ -97,5 +94,3 @@ def remove_objects_from_target(
             d.rmdir()
         except OSError:
             pass
-
-    return counter

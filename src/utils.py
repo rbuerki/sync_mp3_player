@@ -1,12 +1,12 @@
 import logging
 import yaml
 from pathlib import Path
-from typing import Dict, Optional, Union
+from typing import Any, Optional, Union
 
 logger = logging.getLogger(__name__)
 
 
-def read_yaml(file_path: Union[str, Path], section: Optional[str]) -> Dict:
+def read_yaml(file_path: Union[str, Path], section: Optional[str]) -> Any:
     """Return the key-value-pairs from a YAML file, or, if the
     optional `section` parameter is passed, only from a specific
     section of that file.

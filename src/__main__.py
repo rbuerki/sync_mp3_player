@@ -17,11 +17,9 @@ def main(console: Console):
     target: Path = Path(utils.read_yaml(CONFIG_PATH, "TARGET_PATH"))
     sync_dirs: List[str] = utils.read_yaml(CONFIG_PATH, "SYNC_DIRECTORIES")
 
-    if not target.is_dir():
-        raise OSError("Target device not found at path '{target}'.")
-
     console.log("[bold yellow]Starting sync process ...[/]",)
 
+    foos.check_and_prepare_target(target, sync_dirs)
     source_dict, target_dict = foos.walk_sync_dirs_and_merge_file_dicts(
         source, target, sync_dirs
     )

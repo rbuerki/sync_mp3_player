@@ -31,6 +31,18 @@ def walk_sync_dirs_and_merge_file_dicts(
     return source_dict, target_dict
 
 
+def check_and_prepare_target(target: Path, sync_dirs: List[str]):
+    """Check if the target exists at the specified path and
+    if one or some of the sync dirs do not yet exist, create them.
+    """
+    if not target.exists():
+        raise OSError("Target device not found at path '{target}'.")
+    for d in sync_dirs:
+        if not (target / d).exists():
+            (target / d).mkdir()
+            console.log(f"Directory '{d}' created on target.")
+
+
 def create_file_dicts(
     source: Path, target: Path, sync_dir: str
 ) -> Tuple[FileDict, FileDict]:

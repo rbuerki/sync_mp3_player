@@ -1,4 +1,4 @@
-from src import foos
+from sync import foos
 
 
 def test_compare_dicts_1(source_dict, target_dict):

@@ -109,23 +109,20 @@ def remove_objects_from_target(file_list: FileList, target: Path):
         for pos, f in enumerate(file_list):
             console.print(f"{pos} - Deleting file {f.name} from target ...")
             (target / f).unlink()
-            directories_to_delete_if_empty.append(f.parent)
+            directories_to_delete_if_empty.append(Path(target / f.parent))
             sleep(0.5)
 
     # Remove all empty directories (album and artist)
-    with console.status("[bold yellow] Deleting removed files ..."):
-        for d in set(directories_to_delete_if_empty):
+    for d in set(directories_to_delete_if_empty):
+        try:
+            d.rmdir()
+            console.print(f"Cleaning directory {d} from target ...")
             try:
-                d.rmdir()
-                console.print(f"Cleaning directory {d} from target ...")
-                try:
-                    d.parent.rmdir()
-                    console.print(
-                        f"Cleaning directory {d.parent} from target ..."
-                    )
+                d.parent.rmdir()
+                console.print(f"Cleaning directory {d.parent} from target ...")
 
-                except OSError:
-                    pass
-                sleep(0.5)
-            except OSError:
-                pass
+            except OSError as e:
+                print(e)
+            sleep(0.5)
+        except OSError as e:
+            print(e)

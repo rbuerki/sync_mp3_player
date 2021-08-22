@@ -7,6 +7,7 @@ data/
 reports/
 logs/
 debug.log
+config_test.yaml
 
 ### Django ###
 *.log

@@ -36,7 +36,8 @@ def main(console: Console):
     if len(updated) > 0:
         foos.copy_objects_to_target(updated, source, target)
     if len(removed) > 0:
-        foos.remove_objects_from_target(removed, target)
+        dirs_to_delete = foos.remove_files_from_target(removed, target)
+        foos.remove_empty_directories_from_target(dirs_to_delete)
 
     console.log("[bold yellow] Sync process complete!")
 

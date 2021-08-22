@@ -99,30 +99,38 @@ def copy_objects_to_target(file_list: FileList, source: Path, target: Path):
             shutil.copy((source / f), (target / f).parent)
 
 
-def remove_objects_from_target(file_list: FileList, target: Path):
-    """Delete objects in list from target. First the files,
-    then all empty directories.
+def remove_files_from_target(file_list: FileList, target: Path) -> FileList:
+    """Delete objects in list from target. Return a list with all directories
+    from which objects were removed.
     """
-    directories_to_delete_if_empty = []
+    dirs_to_delete_if_empty = []
 
     with console.status("[bold yellow] Deleting removed files ..."):
         for pos, f in enumerate(file_list):
             console.print(f"{pos} - Deleting file {f.name} from target ...")
             (target / f).unlink()
-            directories_to_delete_if_empty.append(Path(target / f.parent))
+            dirs_to_delete_if_empty.append(Path(target / f.parent))
             sleep(0.5)
 
-    # Remove all empty directories (album and artist)
-    for d in set(directories_to_delete_if_empty):
+    return list(set(dirs_to_delete_if_empty))
+
+
+def remove_empty_directories_from_target(dirs_to_delete_if_empty: List[Path],):
+    """Remove all directories from the target. Do it recursively,
+    starting with album, walking the path up to artist, then genre (sync dir), 
+    ... it would even delete the target itself it was empty ;-).
+    """
+
+    def _walk_path_and_delete_if_empty(d: Path):
+        """Recursive inner function. First time in the wild for me ;-)"""
         try:
             d.rmdir()
             console.print(f"Cleaning directory {d} from target ...")
-            try:
-                d.parent.rmdir()
-                console.print(f"Cleaning directory {d.parent} from target ...")
-
-            except OSError as e:
-                print(e)
             sleep(0.5)
-        except OSError as e:
-            print(e)
+            _walk_path_and_delete_if_empty(d.parent)
+        except OSError:
+            pass
+
+    # Remove all empty directories
+    for d in set(dirs_to_delete_if_empty):
+        _walk_path_and_delete_if_empty(d)

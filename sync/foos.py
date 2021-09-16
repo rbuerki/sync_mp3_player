@@ -38,12 +38,14 @@ def walk_sync_dirs_and_merge_file_dicts(
     all the files with their last modification date for the defined
     directories.
     """
-    source_dict = target_dict = {}
+    source_dict = {}
+    target_dict = {}
     for sync_dir in sync_dirs:
-        source_dict, target_dict = create_file_dicts(source, target, sync_dir)
-
-        source_dict.update(source_dict)
-        target_dict.update(target_dict)
+        dir_source_dict, dir_target_dict = create_file_dicts(
+            source, target, sync_dir
+        )
+        source_dict.update(dir_source_dict)
+        target_dict.update(dir_target_dict)
 
     return source_dict, target_dict
 

@@ -19,7 +19,5 @@ def read_yaml(file_path: Union[str, Path], section: Optional[str]) -> Any:
         try:
             return yaml_content[section]
         except KeyError:
-            logging.error(
-                f"Section {section} not found in config file. Please check."
-            )
+            logging.error(f"Section {section} not found in config file. Please check.")
             raise

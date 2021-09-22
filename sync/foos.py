@@ -41,9 +41,7 @@ def walk_sync_dirs_and_merge_file_dicts(
     source_dict = {}
     target_dict = {}
     for sync_dir in sync_dirs:
-        dir_source_dict, dir_target_dict = create_file_dicts(
-            source, target, sync_dir
-        )
+        dir_source_dict, dir_target_dict = create_file_dicts(source, target, sync_dir)
         source_dict.update(dir_source_dict)
         target_dict.update(dir_target_dict)
 
